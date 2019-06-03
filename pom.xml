@@ -120,6 +120,7 @@
                                 <addDependencies>false</addDependencies>
                                 <preCp>anything</preCp>
                             </classPath>
+							<restartOnCrash>true</restartOnCrash>
                             <icon>src/main/resources/windows/application.ico</icon>
                             <jre>
                                 <minVersion>1.8.0</minVersion>
