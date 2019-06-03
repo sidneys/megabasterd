@@ -111,9 +111,9 @@
                             <goal>launch4j</goal>
                         </goals>
                         <configuration>
-                            <headerType>console</headerType>
-                            <outfile>target/${project.name}.exe</outfile>
-                            <jar>target/${project.name}-${project.version}.jar</jar>
+                            <headerType>gui</headerType>
+                            <jar>${project.build.directory}/${project.name}-${project.version}-jar-with-dependencies.jar</jar>
+                            <outfile>dist/${project.name}.exe</outfile>
                             <errTitle>${project.name}</errTitle>
                             <classPath>
                                 <mainClass>com.tonikelope.megabasterd.MainPanel</mainClass>
