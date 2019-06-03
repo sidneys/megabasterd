@@ -122,7 +122,8 @@
                             </classPath>
                             <icon>src/main/resources/windows/application.ico</icon>
                             <jre>
-                                <minVersion>1.5.0</minVersion>
+                                <minVersion>1.8.0</minVersion>
+								<path>${java.home}</path>
                                 <opts>
                                     <opt>-Djava.endorsed.dirs=./endorsed</opt>
                                 </opts>
