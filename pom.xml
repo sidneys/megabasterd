@@ -2,9 +2,18 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.tonikelope</groupId>
-    <artifactId>MegaBasterd</artifactId>
-    <version>6.31</version>
+    <version>6.12</version>
     <packaging>jar</packaging>
+    <name>MegaBasterd</name>
+    <artifactId>megabasterd</artifactId>
+    <description>Yet another unofficial (and ugly) cross-platform MEGA downloader/uploader/streaming suite.</description>
+    <developers>
+		<developer>
+		  <id>tonikelope</id>
+		  <name>tonikelope</name>
+		  <email>tonikelope@gmail.com</email>
+		</developer>
+	</developers>
     <dependencies>
         <dependency>
             <groupId>org.xerial</groupId>
@@ -20,24 +29,14 @@
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-annotations</artifactId>
+            <artifactId>jackson-databind</artifactId>
             <version>2.9.9</version>
-            <type>jar</type>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-collections4</artifactId>
-            <version>4.3</version>
-        </dependency>
-        <dependency>
-            <groupId>javax.xml.bind</groupId>
-            <artifactId>jaxb-api</artifactId>
-            <version>2.2.11</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>2.9.9.2</version>
+            <artifactId>jackson-annotations</artifactId>
+            <version>2.9.9</version>
+            <type>jar</type>
         </dependency>
         <dependency>
           <groupId>javax.xml.bind</groupId>
@@ -83,10 +82,117 @@
     </build>
     <profiles>
 		<profile>
+			<id>macos</id>
+			<activation>
+				<os>
+					<family>mac</family>
+				</os>
+				<activeByDefault>false</activeByDefault>
+			</activation>
+			<properties>
+				<package.macos.platform>macos</package.macos.platform>
+				<package.macos.directory>${project.build.directory}/${package.macos.platform}</package.macos.directory>
+				<package.macos.jdk.url>https://github.com/AdoptOpenJDK/openjdk8-binaries/releases/download/jdk8u212-b04_openj9-0.14.2/OpenJDK8U-jdk_x64_mac_openj9_8u212b04_openj9-0.14.2.tar.gz</package.macos.jdk.url>
+				<package.macos.jdk.md5>a490a871dc06c99ecd8d42de22cefa63</package.macos.jdk.md5>
+				<package.macos.downloads>${project.build.downloads.directory}/${package.macos.platform}/jdk</package.macos.downloads>
+				<package.macos.jdk>${package.macos.downloads}/jdk8u212-b04</package.macos.jdk>
+			</properties>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>com.googlecode.maven-download-plugin</groupId>
+						<artifactId>download-maven-plugin</artifactId>
+						<version>1.4.2</version>
+						<executions>
+							<execution>
+								<id>macos-download-jdk</id>
+								<phase>prepare-package</phase>
+								<goals>
+									<goal>wget</goal>
+								</goals>
+								<configuration>
+									<url>${package.macos.jdk.url}</url>
+									<md5>${package.macos.jdk.md5}</md5>
+									<outputDirectory>${package.macos.downloads}</outputDirectory>
+									<unpack>false</unpack>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-antrun-plugin</artifactId>
+						<version>1.7</version>
+						<executions>
+							<execution>
+								<id>macos-cleanup</id>
+								<phase>clean</phase>
+								<goals>
+									<goal>run</goal>
+								</goals>
+								<configuration>
+									<target>
+										<echo message="Deleting ${package.macos.platform} package"/>
+										<delete dir="${package.macos.directory}"/>
+										<mkdir dir="${package.macos.directory}"/>
+									</target>
+								</configuration>
+							</execution>
+							<execution>
+								<id>macos-unpack-jdk</id>
+								<phase>package</phase>
+								<goals>
+									<goal>run</goal>
+								</goals>
+								<configuration>
+									<target>
+										<untar src="${package.macos.downloads}/OpenJDK8U-jdk_x64_mac_openj9_8u212b04_openj9-0.14.2.tar.gz" compression="gzip" dest="${package.macos.downloads}"/>.
+									</target>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<groupId>sh.tak.appbundler</groupId>
+						<artifactId>appbundle-maven-plugin</artifactId>
+						<version>1.2.0</version>
+						<dependencies>
+							<dependency>
+								<groupId>org.codehaus.plexus</groupId>
+								<artifactId>plexus-archiver</artifactId>
+								<version>RELEASE</version>
+							</dependency>
+							<dependency>
+								<groupId>org.apache.velocity</groupId>
+								<artifactId>velocity-tools</artifactId>
+								<version>2.0</version>
+							</dependency>
+						</dependencies>
+						<configuration>
+							<mainClass>com.tonikelope.megabasterd.MainPanel</mainClass>
+							<bundleName>${project.name}</bundleName>
+							<jrePath>${package.macos.jdk}</jrePath>
+							<iconFile>src/main/resources/macos/application.icns</iconFile>
+							<buildDirectory>${package.macos.directory}</buildDirectory>
+						</configuration>
+						<executions>
+							<execution>
+								<id>macos-package</id>
+								<phase>package</phase>
+								<goals>
+									<goal>bundle</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+		<profile>
 			<id>windows</id>
 			<activation>
 				<os>
-					<family>windows</family>
+					<family>unix</family>
 				</os>
 				<activeByDefault>false</activeByDefault>
 			</activation>
@@ -100,27 +206,6 @@
 			</properties>
 			<build>
 				<plugins>
-					<plugin>
-						<groupId>org.apache.maven.plugins</groupId>
-						<artifactId>maven-antrun-plugin</artifactId>
-						<version>1.7</version>
-						<executions>
-							<execution>
-								<id>windows-cleanup</id>
-								<phase>prepare-package</phase>
-								<goals>
-									<goal>run</goal>
-								</goals>
-								<configuration>
-									<target>
-										<echo message="Deleting ${package.windows.platform} package"/>
-										<delete dir="${package.windows.directory}"/>
-										<mkdir dir="${package.windows.directory}"/>
-									</target>
-								</configuration>
-							</execution>
-						</executions>
-					</plugin>
 					<plugin>
 						<groupId>com.googlecode.maven-download-plugin</groupId>
 						<artifactId>download-maven-plugin</artifactId>
@@ -137,6 +222,27 @@
 									<md5>${package.windows.jdk.md5}</md5>
 									<outputDirectory>${package.windows.downloads}</outputDirectory>
 									<unpack>true</unpack>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-antrun-plugin</artifactId>
+						<version>1.7</version>
+						<executions>
+							<execution>
+								<id>windows-cleanup</id>
+								<phase>clean</phase>
+								<goals>
+									<goal>run</goal>
+								</goals>
+								<configuration>
+									<target>
+										<echo message="Deleting ${package.windows.platform} package"/>
+										<delete dir="${package.windows.directory}"/>
+										<mkdir dir="${package.windows.directory}"/>
+									</target>
 								</configuration>
 							</execution>
 						</executions>
@@ -191,101 +297,6 @@
 			</build>
 		</profile>
 		<profile>
-			<id>macos</id>
-			<activation>
-				<os>
-					<family>mac</family>
-				</os>
-				<activeByDefault>false</activeByDefault>
-			</activation>
-			<properties>
-				<package.macos.platform>macos</package.macos.platform>
-				<package.macos.directory>${project.build.directory}/${package.macos.platform}</package.macos.directory>
-				<package.macos.jdk.url>https://github.com/AdoptOpenJDK/openjdk8-binaries/releases/download/jdk8u212-b04_openj9-0.14.2/OpenJDK8U-jdk_x64_mac_openj9_8u212b04_openj9-0.14.2.tar.gz</package.macos.jdk.url>
-				<package.macos.jdk.md5>a490a871dc06c99ecd8d42de22cefa63</package.macos.jdk.md5>
-				<package.macos.downloads>${project.build.downloads.directory}/${package.macos.platform}/jdk</package.macos.downloads>
-				<package.macos.jdk>${package.macos.downloads}/jdk8u212-b04</package.macos.jdk>
-			</properties>
-			<build>
-				<plugins>
-					<plugin>
-						<groupId>org.apache.maven.plugins</groupId>
-						<artifactId>maven-antrun-plugin</artifactId>
-						<version>1.7</version>
-						<executions>
-							<execution>
-								<id>macos-cleanup</id>
-								<phase>prepare-package</phase>
-								<goals>
-									<goal>run</goal>
-								</goals>
-								<configuration>
-									<target>
-										<echo message="Deleting ${package.macos.platform} package"/>
-										<delete dir="${package.macos.directory}"/>
-										<mkdir dir="${package.macos.directory}"/>
-									</target>
-								</configuration>
-							</execution>
-						</executions>
-					</plugin>
-					<plugin>
-						<groupId>com.googlecode.maven-download-plugin</groupId>
-						<artifactId>download-maven-plugin</artifactId>
-						<version>1.4.2</version>
-						<executions>
-							<execution>
-								<id>macos-download-jdk</id>
-								<phase>prepare-package</phase>
-								<goals>
-									<goal>wget</goal>
-								</goals>
-								<configuration>
-									<url>${package.macos.jdk.url}</url>
-									<md5>${package.macos.jdk.md5}</md5>
-									<outputDirectory>${package.macos.downloads}</outputDirectory>
-									<unpack>true</unpack>
-								</configuration>
-							</execution>
-						</executions>
-					</plugin>
-					<plugin>
-						<groupId>sh.tak.appbundler</groupId>
-						<artifactId>appbundle-maven-plugin</artifactId>
-						<version>1.2.0</version>
-						<dependencies>
-							<dependency>
-								<groupId>org.codehaus.plexus</groupId>
-								<artifactId>plexus-archiver</artifactId>
-								<version>RELEASE</version>
-							</dependency>
-							<dependency>
-								<groupId>org.apache.velocity</groupId>
-								<artifactId>velocity-tools</artifactId>
-								<version>2.0</version>
-							</dependency>
-						</dependencies>
-						<configuration>
-							<mainClass>com.tonikelope.megabasterd.MainPanel</mainClass>
-							<bundleName>${project.name}</bundleName>
-							<jrePath>${package.macos.jdk}</jrePath>
-							<iconFile>src/main/resources/macos/application.icns</iconFile>
-							<buildDirectory>${package.macos.directory}</buildDirectory>
-						</configuration>
-						<executions>
-							<execution>
-								<id>macos-package</id>
-								<phase>package</phase>
-								<goals>
-									<goal>bundle</goal>
-								</goals>
-							</execution>
-						</executions>
-					</plugin>
-				</plugins>
-			</build>
-		</profile>
-		<profile>
 			<id>linux</id>
 			<activation>
 				<os>
@@ -297,68 +308,21 @@
 				<package.linux.platform>linux</package.linux.platform>
 				<package.linux.directory>${project.build.directory}/${package.linux.platform}</package.linux.directory>
 				<package.linux.downloads>${project.build.downloads.directory}/${package.linux.platform}</package.linux.downloads>
-				<package.linux.jdk.url>https://github.com/AdoptOpenJDK/openjdk8-binaries/releases/download/jdk8u212-b04_openj9-0.14.2/OpenJDK8U-jdk_x64_linux_openj9_linuxXL_8u212b04_openj9-0.14.2.tar.gz</package.linux.jdk.url>
-				<package.linux.jdk.md5>2827395387904f253f08ffa13ae0c9a7</package.linux.jdk.md5>
-				<package.linux.jdk>${package.linux.downloads}/jdk8u212-b04</package.linux.jdk>
 				<package.linux.packr.url>https://libgdx.badlogicgames.com/ci/packr/packr.jar</package.linux.packr.url>
 				<package.linux.packr.md5>13c832920ac832c11cb95a0b58c520f9</package.linux.packr.md5>
 				<package.linux.packr>${package.linux.downloads}/packr.jar</package.linux.packr>
+				<package.debian.directory>${project.build.directory}/debian</package.debian.directory>
 			</properties>
 			<build>
 				<plugins>
-					<plugin>
-						<groupId>com.googlecode.maven-download-plugin</groupId>
-						<artifactId>download-maven-plugin</artifactId>
-						<version>1.4.2</version>
-						<executions>
-							<execution>
-								<id>linux-download-jdk</id>
-								<phase>prepare-package</phase>
-								<goals>
-									<goal>wget</goal>
-								</goals>
-								<configuration>
-									<url>${package.linux.jdk.url}</url>
-									<md5>${package.linux.jdk.md5}</md5>
-									<outputDirectory>${package.linux.downloads}</outputDirectory>
-									<unpack>false</unpack>
-								</configuration>
-							</execution>
-							<execution>
-								<id>linux-download-packr</id>
-								<phase>prepare-package</phase>
-								<goals>
-									<goal>wget</goal>
-								</goals>
-								<configuration>
-									<url>${package.linux.packr.url}</url>
-									<md5>${package.linux.packr.md5}</md5>
-									<outputDirectory>${package.linux.downloads}</outputDirectory>
-									<unpack>false</unpack>
-								</configuration>
-							</execution>
-						</executions>
-					</plugin>
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-antrun-plugin</artifactId>
 						<version>1.7</version>
 						<executions>
 							<execution>
-								<id>linux-unpack-jdk</id>
-								<phase>prepare-package</phase>
-								<goals>
-									<goal>run</goal>
-								</goals>
-								<configuration>
-									<target>
-										<untar src="${package.linux.downloads}/OpenJDK8U-jdk_x64_linux_openj9_linuxXL_8u212b04_openj9-0.14.2.tar.gz" compression="gzip" dest="${package.linux.downloads}"/>.
-									</target>
-								</configuration>
-							</execution>
-							<execution>
 								<id>linux-cleanup</id>
-								<phase>prepare-package</phase>
+								<phase>clean</phase>
 								<goals>
 									<goal>run</goal>
 								</goals>
@@ -366,55 +330,65 @@
 									<target>
 										<echo message="Deleting ${package.linux.platform} package"/>
 										<delete dir="${package.linux.directory}"/>
+										<delete dir="${package.debian.directory}"/>
 										<mkdir dir="${package.linux.directory}"/>
+										<mkdir dir="${package.debian.directory}"/>
 									</target>
+								</configuration>
+							</execution>
+							<execution>
+								<id>linux-copy</id>
+								<phase>package</phase>
+								<goals>
+									<goal>run</goal>
+								</goals>
+								<configuration>
+									<tasks>
+										<echo message="Copy ${package.linux.platform} package"/>
+										<copy file="src/main/resources/linux/stub.sh" tofile="${package.linux.directory}/usr/local/bin/${project.artifactId}"/>
+										<copy file="${project.build.directory}/${project.name}-${project.version}-jar-with-dependencies.jar" tofile="${package.linux.directory}/usr/local/bin/${project.artifactId}.jar"/>
+									</tasks>
 								</configuration>
 							</execution>
 						</executions>
 					</plugin>
 					<plugin>
-						<groupId>org.codehaus.mojo</groupId>
-						<artifactId>exec-maven-plugin</artifactId>
-						<version>1.6.0</version>
+						<groupId>io.solit.maven</groupId>
+						<artifactId>deb-maven-plugin</artifactId>
+						<version>1.0-RC2</version>
 						<executions>
-						  <execution>
-							<id>linux-package</id>
-							<phase>package</phase>
-							<goals>
-							  <goal>exec</goal>
-							</goals>
+							<execution>
+								<id>debian-package</id>
+								<phase>package</phase>
+								<goals>
+									<goal>package</goal>
+								</goals>
 						  </execution>
 						</executions>
 						<configuration>
-							<executable>java</executable>
-							<arguments>
-								<argument>-jar</argument>
-								<argument>${package.linux.packr}</argument>
-								<argument>--platform</argument>
-								<argument>linux64</argument>
-								<argument>--jdk</argument>
-								<argument>${package.linux.jdk}</argument>
-								<argument>--executable</argument>
-								<argument>${project.name}</argument>
-								<argument>--classpath</argument>
-								<argument>${project.build.directory}/${project.name}-${project.version}-jar-with-dependencies.jar</argument>
-								<argument>--mainclass</argument>
-								<argument>com.tonikelope.megabasterd.MainPanel</argument>
-								<argument>--vmargs</argument>
-								<argument>Xmx1G</argument>
-								<argument>--resources</argument>
-								<argument>src/main/resources</argument>
-								<argument>--output</argument>
-								<argument>${package.linux.directory}</argument>
-								<argument>--removelibs</argument>
-								<argument>--verbose</argument>
-						  </arguments>
+							<stageDir>${package.linux.directory}</stageDir>
+							<maintainerScripts>preinst,postinst</maintainerScripts>
+							<maintainer>${project.developers[0].name}</maintainer>
+							<maintainerEmail>${project.developers[0].email}</maintainerEmail>
+							<section>libs</section>
+							<priority>optional</priority>     
+							<architecture>all</architecture>
+							<packageName>${project.artifactId}</packageName>
+							<synopsis>${project.name}</synopsis>
+							<description>${project.description}</description>
+							<target>${package.debian.directory}/${project.artifactId}.deb</target>
+							<autoDependencies>true</autoDependencies>
+							<autoPermissions>true</autoPermissions>
+							<permissions>
+								<permission>
+									<permissions>755</permissions>
+									<include>**/${project.artifactId}.sh</include>
+								</permission>
+							</permissions>
 						</configuration>
 					</plugin>
 				</plugins>
 			</build>
 		</profile>
     </profiles>
-    <name>MegaBasterd</name>
-    <description>Yet another unofficial (and ugly) cross-platform MEGA downloader/uploader/streaming suite.</description>
 </project>
