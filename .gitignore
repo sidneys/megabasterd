@@ -129,3 +129,4 @@ $RECYCLE.BIN/
 #MegaBasterd DB
 *.db
 dist/
+downloads/
